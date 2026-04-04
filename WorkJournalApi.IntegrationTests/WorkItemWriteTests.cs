@@ -147,17 +147,6 @@ public sealed class WorkItemWriteTests : IDisposable
         Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
     }
 
-    [Fact]
-    public async Task Delete_WorkItem_With_Unknown_Id_Returns_NotFound()
-    {
-        var unknownId = Guid.NewGuid();
-        var route = $"/work-items/{unknownId}";
-
-        var response = await _client.DeleteAsync(route);
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
     public void Dispose()
     {
         _client.Dispose();

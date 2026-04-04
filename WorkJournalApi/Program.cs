@@ -60,3 +60,5 @@ app.MapDiagnosticEndpoints();
 app.MapWorkItemEndpoints();
 
 app.Run();
+
+public partial class Program { }

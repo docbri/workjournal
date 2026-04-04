@@ -48,16 +48,12 @@ public sealed class WorkItemValidationTests : IDisposable
         Assert.True(root.TryGetProperty("errors", out var errorsProperty));
         Assert.Equal(JsonValueKind.Object, errorsProperty.ValueKind);
 
-        var errorEntries = errorsProperty.EnumerateObject().ToList();
-        Assert.NotEmpty(errorEntries);
+        Assert.True(errorsProperty.TryGetProperty("Title", out var titleErrorsProperty));
+        Assert.Equal(JsonValueKind.Array, titleErrorsProperty.ValueKind);
 
-        var firstErrorEntry = errorEntries[0];
-        Assert.False(string.IsNullOrWhiteSpace(firstErrorEntry.Name));
-        Assert.Equal(JsonValueKind.Array, firstErrorEntry.Value.ValueKind);
-
-        var messages = firstErrorEntry.Value.EnumerateArray().ToList();
-        Assert.NotEmpty(messages);
-        Assert.All(messages, message => Assert.False(string.IsNullOrWhiteSpace(message.GetString())));
+        var titleMessages = titleErrorsProperty.EnumerateArray().ToList();
+        Assert.NotEmpty(titleMessages);
+        Assert.All(titleMessages, message => Assert.False(string.IsNullOrWhiteSpace(message.GetString())));
     }
 
     [Fact]
@@ -97,16 +93,12 @@ public sealed class WorkItemValidationTests : IDisposable
             Assert.True(root.TryGetProperty("errors", out var errorsProperty));
             Assert.Equal(JsonValueKind.Object, errorsProperty.ValueKind);
 
-            var errorEntries = errorsProperty.EnumerateObject().ToList();
-            Assert.NotEmpty(errorEntries);
+            Assert.True(errorsProperty.TryGetProperty("Title", out var titleErrorsProperty));
+            Assert.Equal(JsonValueKind.Array, titleErrorsProperty.ValueKind);
 
-            var firstErrorEntry = errorEntries[0];
-            Assert.False(string.IsNullOrWhiteSpace(firstErrorEntry.Name));
-            Assert.Equal(JsonValueKind.Array, firstErrorEntry.Value.ValueKind);
-
-            var messages = firstErrorEntry.Value.EnumerateArray().ToList();
-            Assert.NotEmpty(messages);
-            Assert.All(messages, message => Assert.False(string.IsNullOrWhiteSpace(message.GetString())));
+            var titleMessages = titleErrorsProperty.EnumerateArray().ToList();
+            Assert.NotEmpty(titleMessages);
+            Assert.All(titleMessages, message => Assert.False(string.IsNullOrWhiteSpace(message.GetString())));
         }
 
         var getResponse = await _client.GetAsync(route);

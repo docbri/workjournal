@@ -47,6 +47,17 @@ public sealed class WorkItemValidationTests : IDisposable
 
         Assert.True(root.TryGetProperty("errors", out var errorsProperty));
         Assert.Equal(JsonValueKind.Object, errorsProperty.ValueKind);
+
+        var errorEntries = errorsProperty.EnumerateObject().ToList();
+        Assert.NotEmpty(errorEntries);
+
+        var firstErrorEntry = errorEntries[0];
+        Assert.False(string.IsNullOrWhiteSpace(firstErrorEntry.Name));
+        Assert.Equal(JsonValueKind.Array, firstErrorEntry.Value.ValueKind);
+
+        var messages = firstErrorEntry.Value.EnumerateArray().ToList();
+        Assert.NotEmpty(messages);
+        Assert.All(messages, message => Assert.False(string.IsNullOrWhiteSpace(message.GetString())));
     }
 
     [Fact]
@@ -85,6 +96,17 @@ public sealed class WorkItemValidationTests : IDisposable
 
             Assert.True(root.TryGetProperty("errors", out var errorsProperty));
             Assert.Equal(JsonValueKind.Object, errorsProperty.ValueKind);
+
+            var errorEntries = errorsProperty.EnumerateObject().ToList();
+            Assert.NotEmpty(errorEntries);
+
+            var firstErrorEntry = errorEntries[0];
+            Assert.False(string.IsNullOrWhiteSpace(firstErrorEntry.Name));
+            Assert.Equal(JsonValueKind.Array, firstErrorEntry.Value.ValueKind);
+
+            var messages = firstErrorEntry.Value.EnumerateArray().ToList();
+            Assert.NotEmpty(messages);
+            Assert.All(messages, message => Assert.False(string.IsNullOrWhiteSpace(message.GetString())));
         }
 
         var getResponse = await _client.GetAsync(route);

@@ -39,8 +39,14 @@ public sealed class WorkItemValidationTests : IDisposable
         using var document = JsonDocument.Parse(content);
         var root = document.RootElement;
 
-        Assert.True(root.TryGetProperty("title", out _));
-        Assert.True(root.TryGetProperty("status", out _));
+        Assert.True(root.TryGetProperty("title", out var titleProperty));
+        Assert.False(string.IsNullOrWhiteSpace(titleProperty.GetString()));
+
+        Assert.True(root.TryGetProperty("status", out var statusProperty));
+        Assert.Equal(400, statusProperty.GetInt32());
+
+        Assert.True(root.TryGetProperty("errors", out var errorsProperty));
+        Assert.Equal(JsonValueKind.Object, errorsProperty.ValueKind);
     }
 
     [Fact]
@@ -71,8 +77,14 @@ public sealed class WorkItemValidationTests : IDisposable
         {
             var root = problemDocument.RootElement;
 
-            Assert.True(root.TryGetProperty("title", out _));
-            Assert.True(root.TryGetProperty("status", out _));
+            Assert.True(root.TryGetProperty("title", out var titleProperty));
+            Assert.False(string.IsNullOrWhiteSpace(titleProperty.GetString()));
+
+            Assert.True(root.TryGetProperty("status", out var statusProperty));
+            Assert.Equal(400, statusProperty.GetInt32());
+
+            Assert.True(root.TryGetProperty("errors", out var errorsProperty));
+            Assert.Equal(JsonValueKind.Object, errorsProperty.ValueKind);
         }
 
         var getResponse = await _client.GetAsync(route);

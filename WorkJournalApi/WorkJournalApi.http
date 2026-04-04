@@ -1,0 +1,6 @@
+@WorkJournalApi_HostAddress = http://localhost:5236
+
+GET {{WorkJournalApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

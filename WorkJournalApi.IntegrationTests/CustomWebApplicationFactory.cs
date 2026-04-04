@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using WorkJournalApi.Data;
 
@@ -9,11 +10,25 @@ namespace WorkJournalApi.IntegrationTests;
 
 public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>, IDisposable
 {
+    private readonly Dictionary<string, string?> _configurationOverrides;
     private SqliteConnection? _connection;
+
+    public CustomWebApplicationFactory(Dictionary<string, string?>? configurationOverrides = null)
+    {
+        _configurationOverrides = configurationOverrides ?? new Dictionary<string, string?>();
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("IntegrationTesting");
+
+        if (_configurationOverrides.Count > 0)
+        {
+            builder.ConfigureAppConfiguration((_, configBuilder) =>
+            {
+                configBuilder.AddInMemoryCollection(_configurationOverrides);
+            });
+        }
 
         builder.ConfigureServices(services =>
         {
@@ -32,7 +47,6 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             {
                 options.UseSqlite(_connection);
             });
-
         });
     }
 

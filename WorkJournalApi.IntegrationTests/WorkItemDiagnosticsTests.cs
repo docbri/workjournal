@@ -4,21 +4,15 @@ using Xunit;
 
 namespace WorkJournalApi.IntegrationTests;
 
-public sealed class WorkItemDiagnosticsTests : IDisposable
+public sealed class WorkItemDiagnosticsTests
 {
-    private readonly CustomWebApplicationFactory _factory;
-    private readonly HttpClient _client;
-
-    public WorkItemDiagnosticsTests()
-    {
-        _factory = new CustomWebApplicationFactory();
-        _client = _factory.CreateClient();
-    }
-
     [Fact]
     public async Task Get_Health_Returns_Healthy_Status()
     {
-        var response = await _client.GetAsync("/health");
+        using var factory = new CustomWebApplicationFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/health");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -37,7 +31,15 @@ public sealed class WorkItemDiagnosticsTests : IDisposable
     [Fact]
     public async Task Get_Config_Returns_Config_When_Enabled()
     {
-        var response = await _client.GetAsync("/diagnostics/config");
+        using var factory = new CustomWebApplicationFactory(new Dictionary<string, string?>
+        {
+            ["Diagnostics:EnvironmentName"] = "IntegrationTesting",
+            ["Diagnostics:EnableConfigEndpoint"] = "true"
+        });
+
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/diagnostics/config");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -47,15 +49,25 @@ public sealed class WorkItemDiagnosticsTests : IDisposable
         var root = document.RootElement;
 
         Assert.True(root.TryGetProperty("environmentName", out var environmentName));
-        Assert.False(string.IsNullOrWhiteSpace(environmentName.GetString()));
+        Assert.Equal("IntegrationTesting", environmentName.GetString());
 
         Assert.True(root.TryGetProperty("enableConfigEndpoint", out var enableConfigEndpoint));
         Assert.True(enableConfigEndpoint.GetBoolean());
     }
 
-    public void Dispose()
+    [Fact]
+    public async Task Get_Config_Returns_NotFound_When_Disabled()
     {
-        _client.Dispose();
-        _factory.Dispose();
+        using var factory = new CustomWebApplicationFactory(new Dictionary<string, string?>
+        {
+            ["Diagnostics:EnvironmentName"] = "IntegrationTesting",
+            ["Diagnostics:EnableConfigEndpoint"] = "false"
+        });
+
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/diagnostics/config");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

@@ -27,6 +27,11 @@ public static class DiagnosticEndpoints
             });
         });
 
+        app.MapGet("/diagnostics/throw", () =>
+        {
+            throw new InvalidOperationException("Test exception");
+        });
+        
         return app;
     }
 }

@@ -1,5 +1,5 @@
 using System.Net;
-using System.Net.Http.Json;
+using System.Text.Json;
 using Xunit;
 
 namespace WorkJournalApi.IntegrationTests;
@@ -22,22 +22,36 @@ public sealed class ApplicationSmokeTests : IClassFixture<CustomWebApplicationFa
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var document = await response.Content.ReadFromJsonAsync<OpenApiDocumentResponse>();
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.False(string.IsNullOrWhiteSpace(content));
 
-        Assert.NotNull(document);
-        Assert.False(string.IsNullOrWhiteSpace(document!.OpenApi));
-        Assert.False(string.IsNullOrWhiteSpace(document.Info.Title));
+        using var document = JsonDocument.Parse(content);
+
+        Assert.True(document.RootElement.TryGetProperty("openapi", out var openApiProperty));
+        Assert.False(string.IsNullOrWhiteSpace(openApiProperty.GetString()));
+
+        Assert.True(document.RootElement.TryGetProperty("info", out var infoProperty));
+        Assert.True(infoProperty.TryGetProperty("title", out var titleProperty));
+        Assert.False(string.IsNullOrWhiteSpace(titleProperty.GetString()));
     }
 
-    public sealed class OpenApiDocumentResponse
+    [Fact]
+    public async Task Get_All_WorkItems_Returns_Success_And_Json_Array()
     {
-        public string OpenApi { get; set; } = string.Empty;
+        const string route = "/work-items";
 
-        public InfoResponse Info { get; set; } = new();
-    }
+        // Act
+        var response = await _client.GetAsync(route);
 
-    public sealed class InfoResponse
-    {
-        public string Title { get; set; } = string.Empty;
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/json; charset=utf-8", response.Content.Headers.ContentType?.ToString());
+
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.False(string.IsNullOrWhiteSpace(content));
+
+        using var document = JsonDocument.Parse(content);
+
+        Assert.Equal(JsonValueKind.Array, document.RootElement.ValueKind);
     }
 }

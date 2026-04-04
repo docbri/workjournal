@@ -7,21 +7,45 @@ using Xunit;
 
 namespace WorkJournalApi.IntegrationTests;
 
-public sealed class UpdateWorkItemValidationTests : IDisposable
+public sealed class WorkItemValidationTests : IDisposable
 {
     private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
-    public UpdateWorkItemValidationTests()
+    public WorkItemValidationTests()
     {
         _factory = new CustomWebApplicationFactory();
         _client = _factory.CreateClient();
     }
 
     [Fact]
+    public async Task Post_WorkItem_With_Empty_Title_Returns_BadRequest()
+    {
+        var request = new CreateWorkItemRequest
+        {
+            Title = "",
+            Notes = "This should fail validation."
+        };
+
+        var response = await _client.PostAsJsonAsync("/work-items", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        Assert.False(string.IsNullOrWhiteSpace(content));
+
+        using var document = JsonDocument.Parse(content);
+        var root = document.RootElement;
+
+        Assert.True(root.TryGetProperty("title", out _));
+        Assert.True(root.TryGetProperty("status", out _));
+    }
+
+    [Fact]
     public async Task Put_WorkItem_With_Empty_Title_Returns_BadRequest_And_Does_Not_Change_Item()
     {
-        // Arrange
         var created = await WorkItemTestHelper.CreateWorkItemAsync(
             _client,
             title: "Original title",
@@ -35,10 +59,8 @@ public sealed class UpdateWorkItemValidationTests : IDisposable
 
         var route = $"/work-items/{created.Id}";
 
-        // Act
         var updateResponse = await _client.PutAsJsonAsync(route, invalidUpdateRequest);
 
-        // Assert rejected response
         Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
         Assert.Equal("application/problem+json", updateResponse.Content.Headers.ContentType?.MediaType);
 
@@ -53,7 +75,6 @@ public sealed class UpdateWorkItemValidationTests : IDisposable
             Assert.True(root.TryGetProperty("status", out _));
         }
 
-        // Act: fetch item again to verify it was not changed
         var getResponse = await _client.GetAsync(route);
 
         Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);

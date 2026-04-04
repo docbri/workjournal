@@ -4,14 +4,15 @@ using Xunit;
 
 namespace WorkJournalApi.IntegrationTests;
 
-public sealed class ApplicationSmokeTests
+public sealed class WorkItemReadTests : IDisposable
 {
+    private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
-    public ApplicationSmokeTests()
+    public WorkItemReadTests()
     {
-        var factory = new CustomWebApplicationFactory();
-        _client = factory.CreateClient();
+        _factory = new CustomWebApplicationFactory();
+        _client = _factory.CreateClient();
     }
 
     [Fact]
@@ -28,5 +29,11 @@ public sealed class ApplicationSmokeTests
         using var document = JsonDocument.Parse(content);
 
         Assert.Equal(JsonValueKind.Array, document.RootElement.ValueKind);
+    }
+
+    public void Dispose()
+    {
+        _client.Dispose();
+        _factory.Dispose();
     }
 }

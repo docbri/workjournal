@@ -129,6 +129,46 @@ public sealed class WorkItemWriteTests : IDisposable
     }
 
     [Fact]
+    public async Task Post_Complete_WorkItem_Twice_Is_Idempotent()
+    {
+        var created = await WorkItemTestHelper.CreateWorkItemAsync(
+            _client,
+            title: "Complete me twice",
+            notes: "Second complete should not change completion timestamp.");
+
+        var completeRoute = $"/work-items/{created.Id}/complete";
+
+        var firstCompleteResponse = await _client.PostAsync(completeRoute, content: null);
+        Assert.Equal(HttpStatusCode.NoContent, firstCompleteResponse.StatusCode);
+
+        var afterFirstGetResponse = await _client.GetAsync($"/work-items/{created.Id}");
+        Assert.Equal(HttpStatusCode.OK, afterFirstGetResponse.StatusCode);
+
+        var afterFirst = await afterFirstGetResponse.Content.ReadFromJsonAsync<WorkItemResponse>();
+
+        Assert.NotNull(afterFirst);
+        Assert.True(afterFirst!.IsCompleted);
+        Assert.NotNull(afterFirst.CompletedAtUtc);
+
+        var firstCompletedAtUtc = afterFirst.CompletedAtUtc;
+
+        var secondCompleteResponse = await _client.PostAsync(completeRoute, content: null);
+        Assert.Equal(HttpStatusCode.NoContent, secondCompleteResponse.StatusCode);
+
+        var afterSecondGetResponse = await _client.GetAsync($"/work-items/{created.Id}");
+        Assert.Equal(HttpStatusCode.OK, afterSecondGetResponse.StatusCode);
+
+        var afterSecond = await afterSecondGetResponse.Content.ReadFromJsonAsync<WorkItemResponse>();
+
+        Assert.NotNull(afterSecond);
+        Assert.True(afterSecond!.IsCompleted);
+        Assert.NotNull(afterSecond.CompletedAtUtc);
+        Assert.Equal(firstCompletedAtUtc, afterSecond.CompletedAtUtc);
+        Assert.Equal("Complete me twice", afterSecond.Title);
+        Assert.Equal("Second complete should not change completion timestamp.", afterSecond.Notes);
+    }
+
+    [Fact]
     public async Task Delete_WorkItem_Removes_Item_And_Item_Can_No_Longer_Be_Retrieved()
     {
         var created = await WorkItemTestHelper.CreateWorkItemAsync(

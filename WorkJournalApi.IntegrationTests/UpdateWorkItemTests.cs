@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using WorkJournalApi.IntegrationTests.Contracts;
+using WorkJournalApi.IntegrationTests.Helpers;
 using Xunit;
 
 namespace WorkJournalApi.IntegrationTests;
@@ -18,21 +20,11 @@ public sealed class UpdateWorkItemTests : IDisposable
     [Fact]
     public async Task Put_WorkItem_Updates_Item_And_Persists_Changes()
     {
-        // Arrange: create an item first
-        var createRequest = new CreateWorkItemRequest
-        {
-            Title = "Original title",
-            Notes = "Original notes"
-        };
-
-        var createResponse = await _client.PostAsJsonAsync("/work-items", createRequest);
-
-        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
-
-        var created = await createResponse.Content.ReadFromJsonAsync<WorkItemResponse>();
-
-        Assert.NotNull(created);
-        Assert.NotEqual(Guid.Empty, created!.Id);
+        // Arrange
+        var created = await WorkItemTestHelper.CreateWorkItemAsync(
+            _client,
+            title: "Original title",
+            notes: "Original notes");
 
         var updateRequest = new UpdateWorkItemRequest
         {
@@ -40,11 +32,9 @@ public sealed class UpdateWorkItemTests : IDisposable
             Notes = "Updated notes"
         };
 
-        // IMPORTANT:
-        // If your actual update route is different, replace this route string.
         var updateRoute = $"/work-items/{created.Id}";
 
-        // Act: update the item
+        // Act
         var updateResponse = await _client.PutAsJsonAsync(updateRoute, updateRequest);
 
         // Assert update response status
@@ -79,27 +69,5 @@ public sealed class UpdateWorkItemTests : IDisposable
     {
         _client.Dispose();
         _factory.Dispose();
-    }
-
-    private sealed class CreateWorkItemRequest
-    {
-        public string Title { get; init; } = string.Empty;
-        public string? Notes { get; init; }
-    }
-
-    private sealed class UpdateWorkItemRequest
-    {
-        public string Title { get; init; } = string.Empty;
-        public string? Notes { get; init; }
-    }
-
-    private sealed class WorkItemResponse
-    {
-        public Guid Id { get; init; }
-        public string Title { get; init; } = string.Empty;
-        public string? Notes { get; init; }
-        public DateTime CreatedAtUtc { get; init; }
-        public bool IsCompleted { get; init; }
-        public DateTime? CompletedAtUtc { get; init; }
     }
 }

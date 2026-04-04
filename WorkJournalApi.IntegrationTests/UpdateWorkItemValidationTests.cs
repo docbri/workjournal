@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using WorkJournalApi.IntegrationTests.Contracts;
+using WorkJournalApi.IntegrationTests.Helpers;
 using Xunit;
 
 namespace WorkJournalApi.IntegrationTests;
@@ -19,21 +21,11 @@ public sealed class UpdateWorkItemValidationTests : IDisposable
     [Fact]
     public async Task Put_WorkItem_With_Empty_Title_Returns_BadRequest_And_Does_Not_Change_Item()
     {
-        // Arrange: create a valid item first
-        var createRequest = new CreateWorkItemRequest
-        {
-            Title = "Original title",
-            Notes = "Original notes"
-        };
-
-        var createResponse = await _client.PostAsJsonAsync("/work-items", createRequest);
-
-        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
-
-        var created = await createResponse.Content.ReadFromJsonAsync<WorkItemResponse>();
-
-        Assert.NotNull(created);
-        Assert.NotEqual(Guid.Empty, created!.Id);
+        // Arrange
+        var created = await WorkItemTestHelper.CreateWorkItemAsync(
+            _client,
+            title: "Original title",
+            notes: "Original notes");
 
         var invalidUpdateRequest = new UpdateWorkItemRequest
         {
@@ -43,10 +35,10 @@ public sealed class UpdateWorkItemValidationTests : IDisposable
 
         var route = $"/work-items/{created.Id}";
 
-        // Act: attempt invalid update
+        // Act
         var updateResponse = await _client.PutAsJsonAsync(route, invalidUpdateRequest);
 
-        // Assert: request is rejected
+        // Assert rejected response
         Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
         Assert.Equal("application/problem+json", updateResponse.Content.Headers.ContentType?.MediaType);
 
@@ -61,7 +53,7 @@ public sealed class UpdateWorkItemValidationTests : IDisposable
             Assert.True(root.TryGetProperty("status", out _));
         }
 
-        // Act: fetch the item again to verify it was not changed
+        // Act: fetch item again to verify it was not changed
         var getResponse = await _client.GetAsync(route);
 
         Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
@@ -70,8 +62,8 @@ public sealed class UpdateWorkItemValidationTests : IDisposable
 
         Assert.NotNull(fetched);
         Assert.Equal(created.Id, fetched!.Id);
-        Assert.Equal(createRequest.Title, fetched.Title);
-        Assert.Equal(createRequest.Notes, fetched.Notes);
+        Assert.Equal("Original title", fetched.Title);
+        Assert.Equal("Original notes", fetched.Notes);
         Assert.False(fetched.IsCompleted);
         Assert.Null(fetched.CompletedAtUtc);
     }
@@ -80,27 +72,5 @@ public sealed class UpdateWorkItemValidationTests : IDisposable
     {
         _client.Dispose();
         _factory.Dispose();
-    }
-
-    private sealed class CreateWorkItemRequest
-    {
-        public string Title { get; init; } = string.Empty;
-        public string? Notes { get; init; }
-    }
-
-    private sealed class UpdateWorkItemRequest
-    {
-        public string Title { get; init; } = string.Empty;
-        public string? Notes { get; init; }
-    }
-
-    private sealed class WorkItemResponse
-    {
-        public Guid Id { get; init; }
-        public string Title { get; init; } = string.Empty;
-        public string? Notes { get; init; }
-        public DateTime CreatedAtUtc { get; init; }
-        public bool IsCompleted { get; init; }
-        public DateTime? CompletedAtUtc { get; init; }
     }
 }

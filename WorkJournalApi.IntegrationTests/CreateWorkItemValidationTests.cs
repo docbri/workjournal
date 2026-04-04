@@ -1,6 +1,7 @@
 using System.Net;
-using System.Text.Json;
 using System.Net.Http.Json;
+using System.Text.Json;
+using WorkJournalApi.IntegrationTests.Contracts;
 using Xunit;
 
 namespace WorkJournalApi.IntegrationTests;
@@ -52,11 +53,5 @@ public sealed class CreateWorkItemValidationTests : IDisposable
     {
         _client.Dispose();
         _factory.Dispose();
-    }
-
-    private sealed class CreateWorkItemRequest
-    {
-        public string Title { get; init; } = string.Empty;
-        public string? Notes { get; init; }
     }
 }

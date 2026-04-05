@@ -58,6 +58,7 @@ if (app.Environment.IsDevelopment())
 
 app.MapDiagnosticEndpoints();
 app.MapWorkItemEndpoints();
+app.MapSystemEndpoints();
 
 app.Run();
 

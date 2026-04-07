@@ -8,12 +8,13 @@ public sealed class WorkItem
     public DateTime CreatedAtUtc { get; private set; }
     public bool IsCompleted { get; private set; }
     public DateTime? CompletedAtUtc { get; private set; }
+    public int Priority { get; private set; }
 
     private WorkItem()
     {
     }
 
-    public WorkItem(string title, string? notes)
+    public WorkItem(string title, string? notes, int priority = 0)
     {
         if (string.IsNullOrWhiteSpace(title))
             throw new ArgumentException("Title is required.", nameof(title));
@@ -22,6 +23,7 @@ public sealed class WorkItem
         Title = title.Trim();
         Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
         CreatedAtUtc = DateTime.UtcNow;
+        Priority = priority;
     }
 
     public void MarkComplete()

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
 
 namespace WorkJournalApi.Middleware;
 
@@ -47,16 +48,24 @@ public sealed class ExceptionHandlingMiddleware
 
         context.Response.Clear();
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        context.Response.ContentType = "application/json";
+        context.Response.ContentType = "application/problem+json";
 
-        var response = new
+        var problem = new ProblemDetails
         {
-            Error = "An unexpected error occurred.",
+            Title = "An unexpected error occurred.",
+            Status = StatusCodes.Status500InternalServerError,
             Detail = _environment.IsDevelopment() ? exception.Message : null,
-            ExceptionType = _environment.IsDevelopment() ? exception.GetType().Name : null
+            Instance = context.Request.Path
         };
 
-        var json = JsonSerializer.Serialize(response);
+        problem.Extensions["traceId"] = context.TraceIdentifier;
+
+        if (_environment.IsDevelopment())
+        {
+            problem.Extensions["exceptionType"] = exception.GetType().Name;
+        }
+
+        var json = JsonSerializer.Serialize(problem);
 
         await context.Response.WriteAsync(json);
     }

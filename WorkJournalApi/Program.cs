@@ -53,6 +53,11 @@ builder.Services.AddDbContext<WorkJournalDbContext>((serviceProvider, options) =
     }
 });
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<WorkJournalDbContext>(
+        name: "database",
+        tags: new[] { "ready" });
+
 builder.Services.AddScoped<IWorkItemRepository, EfCoreWorkItemRepository>();
 builder.Services.AddScoped<IWorkItemService, WorkItemService>();
 builder.Services.AddSingleton<CreateWorkItemRequestValidator>();

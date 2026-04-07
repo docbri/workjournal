@@ -2,6 +2,10 @@
 bin/
 obj/
 
+# Build artifacts
+publish/
+*.zip
+
 # Rider
 .idea/
 

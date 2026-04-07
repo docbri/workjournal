@@ -17,16 +17,39 @@ builder.Services.Configure<DiagnosticsOptions>(
 
 builder.Services.AddDbContext<WorkJournalDbContext>((serviceProvider, options) =>
 {
-    var environment = serviceProvider.GetRequiredService<IHostEnvironment>();
-    var connectionString = builder.Configuration.GetConnectionString("WorkJournal");
+    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
 
-    options.UseSqlite(connectionString);
+    var provider = configuration["Database:Provider"];
+    var connectionString = configuration.GetConnectionString("WorkJournal");
 
-    if (environment.IsDevelopment())
+    if (string.IsNullOrWhiteSpace(provider))
     {
-        options
-            .LogTo(Console.WriteLine, LogLevel.Information)
-            .EnableSensitiveDataLogging();
+        throw new InvalidOperationException(
+            "Database provider is not configured for this environment.");
+    }
+
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        throw new InvalidOperationException(
+            "Connection string 'WorkJournal' was not found for this environment.");
+    }
+
+    switch (provider)
+    {
+        case "Sqlite":
+            options.UseSqlite(connectionString);
+            break;
+
+        case "SqlServer":
+            options.UseSqlServer(connectionString, sqlServerOptions =>
+            {
+                sqlServerOptions.EnableRetryOnFailure();
+            });
+            break;
+
+        default:
+            throw new InvalidOperationException(
+                $"Unsupported database provider: '{provider}'.");
     }
 });
 
@@ -36,12 +59,6 @@ builder.Services.AddSingleton<CreateWorkItemRequestValidator>();
 builder.Services.AddSingleton<UpdateWorkItemRequestValidator>();
 
 var app = builder.Build();
-
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<WorkJournalDbContext>();
-    await dbContext.Database.MigrateAsync();
-}
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestTimingMiddleware>();

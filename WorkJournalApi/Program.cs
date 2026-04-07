@@ -60,6 +60,18 @@ builder.Services.AddSingleton<UpdateWorkItemRequestValidator>();
 
 var app = builder.Build();
 
+var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+var startupConfiguration = app.Services.GetRequiredService<IConfiguration>();
+
+startupLogger.LogInformation(
+    "Application starting in environment '{EnvironmentName}' with database provider '{DatabaseProvider}'.",
+    app.Environment.EnvironmentName,
+    startupConfiguration["Database:Provider"]);
+
+startupLogger.LogInformation(
+    "Diagnostics config endpoint enabled: {EnableConfigEndpoint}",
+    startupConfiguration.GetValue<bool>("Diagnostics:EnableConfigEndpoint"));
+
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestTimingMiddleware>();
 

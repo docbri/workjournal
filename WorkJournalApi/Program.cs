@@ -7,10 +7,12 @@ using WorkJournalApi.Options;
 using WorkJournalApi.Repositories;
 using WorkJournalApi.Services;
 using WorkJournalApi.Validation;
+using WorkJournalApi.Infrastructure.Observability;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddObservability(builder.Configuration, builder.Environment);
 
 builder.Services.Configure<DiagnosticsOptions>(
     builder.Configuration.GetSection(DiagnosticsOptions.SectionName));
@@ -54,6 +56,31 @@ startupLogger.LogInformation(
 startupLogger.LogInformation(
     "Diagnostics config endpoint enabled: {EnableConfigEndpoint}",
     startupConfiguration.GetValue<bool>("Diagnostics:EnableConfigEndpoint"));
+
+var applicationInsightsConnectionString =
+    startupConfiguration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+
+if (string.IsNullOrWhiteSpace(applicationInsightsConnectionString))
+{
+    if (app.Environment.IsDevelopment())
+    {
+        startupLogger.LogInformation(
+            "Application Insights is not configured for environment '{EnvironmentName}'. Observability export is disabled.",
+            app.Environment.EnvironmentName);
+    }
+    else
+    {
+        startupLogger.LogWarning(
+            "Application Insights is not configured for environment '{EnvironmentName}'. Observability export is disabled.",
+            app.Environment.EnvironmentName);
+    }
+}
+else
+{
+    startupLogger.LogInformation(
+        "Application Insights is configured for environment '{EnvironmentName}'.",
+        app.Environment.EnvironmentName);
+}
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestTimingMiddleware>();

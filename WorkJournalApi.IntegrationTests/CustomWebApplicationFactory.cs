@@ -22,10 +22,12 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
         builder.ConfigureAppConfiguration((_, configBuilder) =>
         {
+            var databaseName = $"WorkJournalIntegrationTests_{Guid.NewGuid():N}";
+
             var connectionString =
                 Environment.GetEnvironmentVariable("ConnectionStrings__WorkJournal")
-                ?? "Server=localhost,1433;Initial Catalog=WorkJournalIntegrationTests;User ID=sa;Password=WorkJ0urnal42;Encrypt=True;TrustServerCertificate=True;";
-
+                ?? $"Server=localhost,14333;Initial Catalog={databaseName};User ID=sa;Password=WorkJ0urnal42;Encrypt=True;TrustServerCertificate=True;MultipleActiveResultSets=False;Connection Timeout=30;";
+            
             var settings = new Dictionary<string, string?>
             {
                 ["ConnectionStrings:WorkJournal"] = connectionString
@@ -46,7 +48,7 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             using var scope = sp.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<WorkJournalDbContext>();
 
-            db.Database.Migrate();
+            db.Database.Migrate();         
         });
     }
 }

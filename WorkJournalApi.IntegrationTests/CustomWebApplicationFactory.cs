@@ -52,7 +52,21 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             using var scope = sp.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<WorkJournalDbContext>();
 
-            db.Database.Migrate();         
+            var retries = 10;
+            var delay = TimeSpan.FromSeconds(2);
+
+            for (var attempt = 1; attempt <= retries; attempt++)
+            {
+                try
+                {
+                    db.Database.Migrate();
+                    break;
+                }
+                catch (Exception) when (attempt < retries)
+                {
+                    Thread.Sleep(delay);
+                }
+            }         
         });
     }
 }

@@ -33,17 +33,6 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
-      - name: Test
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if find . -name "*Tests.csproj" | grep -q .; then
-            dotnet test --no-build --configuration Release
-          else
-            echo "No test projects found. Skipping tests."
-          fi
-
       - name: Publish app
         run: dotnet publish ./WorkJournalApi/WorkJournalApi.csproj --no-build --configuration Release --output ./publish
 

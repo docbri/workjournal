@@ -40,14 +40,11 @@ jobs:
           sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18 unixodbc-dev
           echo "/opt/mssql-tools18/bin" >> $GITHUB_PATH
 
-      - name: Wait for SQL Server
+      - name: Wait for SQL Server to be ready
         shell: bash
         run: |
           for i in {1..30}; do
-            if (echo > /dev/tcp/127.0.0.1/1433) >/dev/null 2>&1; then
-              echo "SQL Server port is accepting connections."
-              exit 0
-            fi
+            /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'WorkJ0urnal42' -C -Q "SELECT 1" && exit 0
             echo "Waiting for SQL Server..."
             sleep 2
           done

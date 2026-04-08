@@ -18,6 +18,7 @@ public sealed class EfCoreWorkItemRepository : IWorkItemRepository
         return await _dbContext.WorkItems
             .AsNoTracking()
             .OrderByDescending(x => x.CreatedAtUtc)
+            .ThenByDescending(x => x.Id)
             .ToListAsync(cancellationToken);
     }
 

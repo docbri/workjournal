@@ -24,9 +24,13 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
         {
             var databaseName = $"WorkJournalIntegrationTests_{Guid.NewGuid():N}";
 
+            var envConnectionString =
+                Environment.GetEnvironmentVariable("ConnectionStrings__WorkJournal");
+
             var connectionString =
-                Environment.GetEnvironmentVariable("ConnectionStrings__WorkJournal")
-                ?? $"Server=localhost,14333;Initial Catalog={databaseName};User ID=sa;Password=WorkJ0urnal42;Encrypt=True;TrustServerCertificate=True;MultipleActiveResultSets=False;Connection Timeout=30;";
+                builder.GetSetting("environment") == "IntegrationTesting" && envConnectionString != null
+                    ? envConnectionString
+                    : $"Server=localhost,14333;Initial Catalog={databaseName};User ID=sa;Password=WorkJ0urnal42;Encrypt=True;TrustServerCertificate=True;MultipleActiveResultSets=False;Connection Timeout=30;"; 
             
             var settings = new Dictionary<string, string?>
             {

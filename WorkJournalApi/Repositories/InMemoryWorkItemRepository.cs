@@ -10,6 +10,7 @@ public sealed class InMemoryWorkItemRepository : IWorkItemRepository
     {
         IReadOnlyList<WorkItem> items = _items
             .OrderByDescending(x => x.CreatedAtUtc)
+            .ThenByDescending(x => x.Id)
             .ToList();
 
         return Task.FromResult(items);

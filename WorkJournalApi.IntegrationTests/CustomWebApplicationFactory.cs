@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using WorkJournalApi.Data;
 
 namespace WorkJournalApi.IntegrationTests;
 
@@ -31,6 +34,18 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             }
 
             configBuilder.AddInMemoryCollection(settings);
+        });
+
+        builder.ConfigureServices(services =>
+        {
+            // Build the service provider
+            var sp = services.BuildServiceProvider();
+
+            using var scope = sp.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<WorkJournalDbContext>();
+
+            // THIS is the critical fix
+            db.Database.Migrate();
         });
     }
 }

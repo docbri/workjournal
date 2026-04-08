@@ -59,14 +59,14 @@ public sealed class WorkItemReadTests : IDisposable
     }
 
     [Fact]
-    public async Task Get_All_WorkItems_Returns_Items_In_Descending_CreatedAtUtc_Order()
+    public async Task Get_All_WorkItems_Returns_Items_In_Deterministic_Descending_Order()
     {
-        var first = await WorkItemTestHelper.CreateWorkItemAsync(
+        await WorkItemTestHelper.CreateWorkItemAsync(
             _client,
             title: "First item",
             notes: "Created first");
 
-        var second = await WorkItemTestHelper.CreateWorkItemAsync(
+        await WorkItemTestHelper.CreateWorkItemAsync(
             _client,
             title: "Second item",
             notes: "Created second");
@@ -80,13 +80,21 @@ public sealed class WorkItemReadTests : IDisposable
         Assert.NotNull(items);
         Assert.True(items!.Count >= 2);
 
-        var firstReturned = items[0];
-        var secondReturned = items[1];
+        for (var i = 0; i < items.Count - 1; i++)
+        {
+            var current = items[i];
+            var next = items[i + 1];
 
-        Assert.Equal(second.Id, firstReturned.Id);
-        Assert.Equal(first.Id, secondReturned.Id);
+            var isCorrectOrder =
+                current.CreatedAtUtc > next.CreatedAtUtc ||
+                (current.CreatedAtUtc == next.CreatedAtUtc && current.Id.CompareTo(next.Id) > 0);
 
-        Assert.True(firstReturned.CreatedAtUtc >= secondReturned.CreatedAtUtc);
+            Assert.True(
+                isCorrectOrder,
+                $"Items are not ordered correctly at positions {i} and {i + 1}. " +
+                $"Current: {current.Id} @ {current.CreatedAtUtc:o}, " +
+                $"Next: {next.Id} @ {next.CreatedAtUtc:o}");
+        }
     }
 
     public void Dispose()

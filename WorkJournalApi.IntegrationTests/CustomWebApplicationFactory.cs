@@ -1,17 +1,12 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using WorkJournalApi.Data;
 
 namespace WorkJournalApi.IntegrationTests;
 
-public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>, IDisposable
+public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
     private readonly Dictionary<string, string?> _configurationOverrides;
-    private SqliteConnection? _connection;
 
     public CustomWebApplicationFactory(Dictionary<string, string?>? configurationOverrides = null)
     {
@@ -22,42 +17,20 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
     {
         builder.UseEnvironment("IntegrationTesting");
 
-        if (_configurationOverrides.Count > 0)
+        builder.ConfigureAppConfiguration((_, configBuilder) =>
         {
-            builder.ConfigureAppConfiguration((_, configBuilder) =>
+            var settings = new Dictionary<string, string?>
             {
-                configBuilder.AddInMemoryCollection(_configurationOverrides);
-            });
-        }
+                ["ConnectionStrings:WorkJournal"] =
+                    Environment.GetEnvironmentVariable("ConnectionStrings__WorkJournal")
+            };
 
-        builder.ConfigureServices(services =>
-        {
-            var dbContextDescriptor = services.SingleOrDefault(
-                service => service.ServiceType == typeof(DbContextOptions<WorkJournalDbContext>));
-
-            if (dbContextDescriptor is not null)
+            foreach (var pair in _configurationOverrides)
             {
-                services.Remove(dbContextDescriptor);
+                settings[pair.Key] = pair.Value;
             }
 
-            _connection = new SqliteConnection("Data Source=:memory:");
-            _connection.Open();
-
-            services.AddDbContext<WorkJournalDbContext>(options =>
-            {
-                options.UseSqlite(_connection);
-            });
+            configBuilder.AddInMemoryCollection(settings);
         });
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        base.Dispose(disposing);
-
-        if (disposing)
-        {
-            _connection?.Dispose();
-            _connection = null;
-        }
     }
 }
